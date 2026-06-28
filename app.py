@@ -16,6 +16,7 @@ def run_self_rag(question: str):
         "retries": 0,
         "relevant_docs": [],
         "docs": [],
+        "rewrite_attempts": 0,
         "answer": ""
     }
     
@@ -26,15 +27,13 @@ def run_self_rag(question: str):
     print(f"Question: {result.get('question')}")
     print(f"Answer: {result.get('answer')}")
     print(f"Need Retrieval: {result.get('need_retrieval')}")
+   
     print(f"Retrieved Documents Count: {len(result.get('docs', []))}")
-    print(f"Relevant Documents Count: {len(result.get('relevant_docs', []))}")
-    print(f"Support check status: {result.get('issup')}")
-    print(f"Usefulness status: {result.get('issue')}")
-    print(f"Total Retries: {result.get('retries')}")
-    print("---------------------")
+   
+    
 
 if __name__ == "__main__":
-    query = "Summarize the document."
+    query = "What is this paper about?"
     if len(sys.argv) > 1:
         query = " ".join(sys.argv[1:])
     run_self_rag(query)

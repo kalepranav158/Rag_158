@@ -14,8 +14,9 @@ g.add_node("accept_revised_answer", nodes.accept_revised_answer)
 g.add_node("revise_answer", nodes.revise_answer)
 g.add_node("no_relevant_docs", nodes.no_relevant_docs)
 g.add_node("generate_direct", nodes.generate_direct)
-g.add_node("retrieve", nodes.rertrieve)
+g.add_node("retrieve", nodes.retrieve)
 g.add_node("is_useful", nodes.is_useful)
+g.add_node("rewrite_querry", nodes.rewrite_question)
 
 # Define edges
 g.add_edge(START, "decide_retrieval")
@@ -65,10 +66,10 @@ g.add_conditional_edges(
     nodes.route_after_is_useful,
     {
         "finalize": "accept_revised_answer",
-        "no_answer_found": "no_relevant_docs"
+        "no_answer_found": "rewrite_querry"
     }
 )
-
+g.add_edge("rewrite_querry", "retrieve")
 # Final exit edges to END
 g.add_edge("generate_direct", END)
 g.add_edge("accept_revised_answer", END)

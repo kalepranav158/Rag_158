@@ -6,19 +6,28 @@ from langchain_core.documents import Document
 # -----------------------------
 #       GRAPH STATE
 #-----------------------------
-class State(TypedDict):
-    question :str
-    need_retrieval:bool
+from typing import TypedDict, List
+from langchain_core.documents import Document
+
+class State(TypedDict, total=False):
+
+    question: str
+    rewritten_question: str
+
     docs: List[Document]
     relevant_docs: List[Document]
-    context:str
-    
-    issup:Literal["fully_supported","partially_supported","not_supported"]
-    evidence:List[str]
+    reranked_docs: List[Document]
 
+    answer: str
+    context: str
 
-    answer:str
-    issue:Literal["useful","not_useful"]
+    retries: int
+    rewrite_attempts: int
 
-    retries:int
+    need_retrieval: bool
 
+    issup: str
+    issue: str
+
+    evidence: list
+    reason: str

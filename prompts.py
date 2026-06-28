@@ -25,31 +25,83 @@ Context: {context}
 ])
 
 # RAG Graph Prompts
-
 decide_retrieval_prompt = ChatPromptTemplate.from_messages([
     (
         "system",
-        "You are a helpful assistant that decides whether to retrieve external documents to answer the question or not.\n"
-        "Return JSON that matches strictly this schema:\n"
-        "Analyze the question if it mention the docuement then give True, else give False.\n"
-        "{{'should_retrieve':boolean}}\n"
-        "Guidelines:\n"
-        "- Should retrieve True if answering requires specific facts, citations, or info that is not likely in the model, for general knowledge.\n"
-        "- Should retrieve False if the question can be answered based on general knowledge or reasoning that is present in the model parameters. Strictly give false if the model can answer a general question.\n"
-        "- If unsure and the question is related to documents, choose True."
+        """
+You are a routing assistant.
+
+Decide whether answering the user's question requires retrieving information from the uploaded document.
+
+Return ONLY valid JSON:
+
+{{
+  "should_retrieve": true
+}}
+
+or
+
+{{
+  "should_retrieve": false
+}}
+
+Rules:
+
+Return TRUE if the question:
+- asks about the uploaded paper/document
+- asks about concepts explained in the document
+- asks for summaries, authors, figures, tables, methods, experiments, results, architecture, equations, citations or technical details from the document
+- requires information that should come from the uploaded document
+
+Return FALSE if the question:
+- is a greeting
+- is casual conversation
+- asks about you
+- is simple reasoning or common knowledge that does NOT depend on the uploaded document
+
+If there is any reasonable chance that the uploaded document contains the answer, return TRUE.
+
+Be conservative.
+When unsure, choose TRUE.
+"""
     ),
-    ("human", "Question: {question}"),
+    (
+        "human",
+        "Question: {question}"
+    ),
 ])
+
 
 is_relevant_prompt = ChatPromptTemplate.from_messages([
     (
         "system",
-        "You are judging document relevance.\n"
-        "Return JSON that matches this schema:\n"
-        "{{'is_relevant':boolean}}\n\n"
-        "A document is relevant if it contains the information useful for answering the question."
+        """
+You are a retrieval relevance grader.
+
+Determine whether the document contains information
+that could help answer the user's question.
+
+Be GENEROUS.
+
+Return true if:
+- The document directly answers the question
+- The document partially answers the question
+- The document discusses concepts related to the question
+
+Return false ONLY if:
+- The document is completely unrelated
+
+Output JSON only:
+
+{{
+  "is_relevant": true
+}}
+"""
     ),
-    ("human", "Question:\n{question}\n\nDocument:\n{document}"),
+    (
+        "human",
+        "Question:\n{question}\n\nDocument:\n{document}"
+    )
 ])
 
 rag_generation_prompt = ChatPromptTemplate.from_messages([
@@ -144,4 +196,55 @@ usefulness_prompt = ChatPromptTemplate.from_messages([
         "human",
         "Question:\n{question}\n\nAnswer:\n{answer}"
     )
+])
+
+rewrite_query_prompt = ChatPromptTemplate.from_messages([
+(
+"system",
+"""
+You are an expert retrieval query rewriter for a Retrieval-Augmented Generation (RAG) system.
+
+Your job is NOT to answer the question.
+
+Rewrite the user's question into a retrieval-friendly query that maximizes retrieval from the CURRENT DOCUMENT.
+
+Rules:
+
+- Preserve the original intent.
+- Assume the question refers to the current document.
+- Expand vague questions into specific information needs.
+- Keep technical terms.
+- Do NOT use quotation marks.
+- Do NOT generate search-engine keywords.
+- Do NOT ask follow-up questions.
+- Return exactly ONE rewritten query.
+
+Examples:
+
+User:
+What is this paper about?
+
+Rewrite:
+Summarize the abstract, objectives, methodology, and main contribution of the paper.
+
+User:
+Who are the authors?
+
+Rewrite:
+Identify the authors of the paper and their affiliations.
+
+User:
+Explain the Transformer architecture.
+
+Rewrite:
+Describe the Transformer architecture including the encoder, decoder, self-attention, and feed-forward layers.
+
+User:
+How was the model trained?
+
+Rewrite:
+Describe the training procedure, optimizer, learning rate schedule, dataset, and hyperparameters used in the paper.
+"""
+),
+("human","{question}")
 ])

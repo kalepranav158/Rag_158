@@ -56,6 +56,8 @@ dist/
 # Temporary Files
 temp/
 tmp/
+debug/
+evaluation/
 
 # Model Files (for local Ollama/HuggingFace experiments)
 models/
@@ -65,3 +67,4 @@ models/
 *.nbconvert.ipynb
 
 notebook/*.ipynb
+.langgraph_api/

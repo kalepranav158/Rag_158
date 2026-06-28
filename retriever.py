@@ -26,12 +26,11 @@ def load_vectorstore():
 @traceable(name="load_chunks")
 def load_chunks():
 
-    docs = load_pdf("data/one.pdf")
+    docs = load_pdf("data/lora.pdf")
 
     chunks = split_documents(docs)
 
     return chunks
-
 
 @traceable(name="faiss_retriever")
 def get_faiss_retriever():
@@ -40,7 +39,7 @@ def get_faiss_retriever():
 
     retriever = vectorstore.as_retriever(
         search_type="similarity",
-        search_kwargs={"k":5}
+        search_kwargs={"k":15}
     )
 
     return retriever
@@ -53,7 +52,7 @@ def get_bm25_retriever():
 
     bm25 = BM25Retriever.from_documents(chunks)
 
-    bm25.k = 5
+    bm25.k = 15
 
     return bm25
 
@@ -63,27 +62,38 @@ def hybrid_retrieve(query: str):
     vectorstore = load_vectorstore()
 
     faiss_retriever = vectorstore.as_retriever(
-        search_kwargs={"k":5}
+        search_kwargs={"k": 7}
     )
 
     bm25_retriever = get_bm25_retriever()
+    bm25_retriever.k = 7
 
     faiss_docs = faiss_retriever.invoke(query)
-
     bm25_docs = bm25_retriever.invoke(query)
 
-    all_docs = faiss_docs + bm25_docs
+    # --------------------------
+    # Round-Robin Merge
+    # --------------------------
 
-    unique_docs = []
-
+    merged_docs = []
     seen = set()
 
-    for doc in all_docs:
+    max_len = max(len(faiss_docs), len(bm25_docs))
 
-        if doc.page_content not in seen:
+    for i in range(max_len):
 
-            seen.add(doc.page_content)
+        if i < len(faiss_docs):
+            doc = faiss_docs[i]
+            if doc.page_content not in seen:
+                seen.add(doc.page_content)
+                merged_docs.append(doc)
 
-            unique_docs.append(doc)
+        if i < len(bm25_docs):
+            doc = bm25_docs[i]
+            if doc.page_content not in seen:
+                seen.add(doc.page_content)
+                merged_docs.append(doc)
 
-    return unique_docs[:5]
+    
+    # Return top candidates
+    return merged_docs[:10]
